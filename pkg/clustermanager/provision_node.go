@@ -9,13 +9,14 @@ import (
 
 const maxErrors = 3
 
-// NodeProvisioner provisions all basic packages to install docker, kubernetes and wireguard
+// NodeProvisioner provisions all basic packages to install docker or crio, kubernetes and wireguard
 type NodeProvisioner struct {
 	clusterName       string
 	node              Node
 	communicator      NodeCommunicator
 	eventService      EventService
 	kubernetesVersion string
+	crioEnabeld		  bool
 }
 
 // NewNodeProvisioner creates a NodeProvisioner instance
@@ -26,6 +27,7 @@ func NewNodeProvisioner(node Node, manager *Manager) *NodeProvisioner {
 		communicator:      manager.nodeCommunicator,
 		eventService:      manager.eventService,
 		kubernetesVersion: manager.Cluster().KubernetesVersion,
+		crioEnabeld:	   manager.crioEnabeld,
 	}
 }
 
@@ -177,14 +179,15 @@ func (provisioner *NodeProvisioner) preparePackages() error {
 		return err
 	}
 
-	// wireguard
-	_, err = provisioner.communicator.RunCmd(provisioner.node, "add-apt-repository ppa:wireguard/wireguard -y")
+	// Wireguard (built into Ubuntu 20.04 kernel already, tools are optional)
+	_, err = provisioner.communicator.RunCmd(provisioner.node, "apt install -y wireguard-tools")
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
+
 func (provisioner *NodeProvisioner) prepareKubernetes() error {
 	// kubernetes
 	_, err := provisioner.communicator.RunCmd(provisioner.node, "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -")
@@ -192,6 +195,7 @@ func (provisioner *NodeProvisioner) prepareKubernetes() error {
 		return err
 	}
 
+	// Repository doesn't have Ubuntu 20.04 (focal), but `kubernetes-xenial` works
 	err = provisioner.communicator.WriteFile(provisioner.node, "/etc/apt/sources.list.d/kubernetes.list", `deb http://apt.kubernetes.io/ kubernetes-xenial main`, AllRead)
 	if err != nil {
 		return err
@@ -204,7 +208,7 @@ func (provisioner *NodeProvisioner) prepareDocker() error {
 	// docker-ce
 	aptPreferencesDocker := `
 Package: docker-ce
-Pin: version 18.09.2~3-0~ubuntu-bionic
+Pin: version 19.03.13~3-0~ubuntu-focal
 Pin-Priority: 1000
 	`
 	err := provisioner.communicator.WriteFile(provisioner.node, "/etc/apt/preferences.d/docker-ce", aptPreferencesDocker, AllRead)
@@ -212,12 +216,43 @@ Pin-Priority: 1000
 		return err
 	}
 
-	_, err = provisioner.communicator.RunCmd(provisioner.node, "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -")
+	_, err = provisioner.communicator.RunCmd(provisioner.node, `curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | apt-key add -`)
 	if err != nil {
 		return err
 	}
 
 	_, err = provisioner.communicator.RunCmd(provisioner.node, `add-apt-repository "deb https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable"`)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (provisioner *NodeProvisioner) prepareCrio() error {
+
+	version, err := provisioner.communicator.RunCmd(provisioner.node, "lsb_release -cs")
+	if err != nil {
+		return err
+	}
+
+	command := fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:%s/%s/Release.key | apt-key add -", provisioner.kubernetesVersion, "x"+version )
+	_, err = provisioner.communicator.RunCmd(provisioner.node, command)
+	if err != nil {
+		return err
+	}
+
+	command = fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/%s/Release.key | apt-key add -", "x"+version )
+	_, err = provisioner.communicator.RunCmd(provisioner.node, command)
+	if err != nil {
+		return err
+	}
+
+	err = provisioner.communicator.WriteFile(provisioner.node, "/etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list", "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/"+version+"/ /", AllRead)
+	if err != nil {
+		return err
+	}
+	err = provisioner.communicator.WriteFile(provisioner.node, "/etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o"+provisioner.kubernetesVersion+".list", "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/"+provisioner.kubernetesVersion+"/x"+version+"/ /", AllRead)
 	if err != nil {
 		return err
 	}
@@ -233,8 +268,15 @@ func (provisioner *NodeProvisioner) updateAndInstall() error {
 	}
 
 	provisioner.eventService.AddEvent(provisioner.node.Name, "installing packages")
-	command := fmt.Sprintf("apt-get install -y docker-ce kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.7.5-00 wireguard linux-headers-$(uname -r) linux-headers-virtual",
-		provisioner.kubernetesVersion, provisioner.kubernetesVersion, provisioner.kubernetesVersion)
+	command := ""
+	if provisioner.crioEnabeld {
+		command = fmt.Sprintf("apt-get install -y cri-o cri-o-runc kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual",
+			provisioner.kubernetesVersion, provisioner.kubernetesVersion, provisioner.kubernetesVersion)
+	} else {
+		command = fmt.Sprintf("apt-get install -y docker-ce kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual",
+			provisioner.kubernetesVersion, provisioner.kubernetesVersion, provisioner.kubernetesVersion)
+	}
+
 	_, err = provisioner.communicator.RunCmd(provisioner.node, command)
 	if err != nil {
 		return err

@@ -54,6 +54,7 @@ var installMastersPhaseCommand = &cobra.Command{
 			cluster.HaEnabled,
 			cluster.IsolatedEtcd,
 			cluster.CloudInitFile,
+			AppConf.CrioEnabled,
 		)
 		phase := phases.NewInstallMastersPhase(clusterManager, phaseOptions)
 

@@ -61,7 +61,9 @@ func RunClusterCreate(cmd *cobra.Command, args []string) {
 		clusterName = name
 	}
 
-	log.Printf("Creating new cluster\n\nNAME:%s\nMASTERS: %d\nWORKERS: %d\nETCD NODES: %d\nHA: %t\nISOLATED ETCD: %t", clusterName, masterCount, workerCount, etcdCount, haEnabled, isolatedEtcd)
+	crioEnabled, _ := cmd.Flags().GetBool("crio")
+
+	log.Printf("Creating new cluster\n\nNAME:%s\nMASTERS: %d\nWORKERS: %d\nETCD NODES: %d\nHA: %t\nISOLATED ETCD: %t\nCrio Enabled: %t", clusterName, masterCount, workerCount, etcdCount, haEnabled, isolatedEtcd, crioEnabled)
 
 	sshKeyName, _ := cmd.Flags().GetString("ssh-key")
 	masterServerType, _ := cmd.Flags().GetString("master-server-type")
@@ -103,7 +105,7 @@ func RunClusterCreate(cmd *cobra.Command, args []string) {
 
 	coordinator := pkg.NewProgressCoordinator()
 
-	clusterManager := clustermanager.NewClusterManager(hetznerProvider, sshClient, coordinator, clusterName, haEnabled, isolatedEtcd, cloudInit)
+	clusterManager := clustermanager.NewClusterManager(hetznerProvider, sshClient, coordinator, clusterName, haEnabled, isolatedEtcd, cloudInit, crioEnabled)
 	cluster := clusterManager.Cluster()
 	saveCluster(&cluster)
 	renderProgressBars(&cluster, coordinator)
