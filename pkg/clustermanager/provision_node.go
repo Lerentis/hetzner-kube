@@ -238,28 +238,31 @@ Pin-Priority: 1000
 
 func (provisioner *NodeProvisioner) prepareCrio() error {
 
-	version, err := provisioner.communicator.RunCmd(provisioner.node, "lsb_release -cs")
+	version, err := provisioner.communicator.RunCmd(provisioner.node, "lsb_release -rs")
 	if err != nil {
 		return err
 	}
 
-	command := fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:%s/%s/Release.key | apt-key add -", provisioner.kubernetesVersion, "x"+version )
+	k8sVersionTokens := strings.Split(provisioner.kubernetesVersion, ".")
+	k8sVersion := k8sVersionTokens[0] + "." + k8sVersionTokens[1]
+
+	command := fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:%s/%s/Release.key | apt-key add -", k8sVersion, "xUbuntu_"+version )
 	_, err = provisioner.communicator.RunCmd(provisioner.node, command)
 	if err != nil {
 		return err
 	}
 
-	command = fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/%s/Release.key | apt-key add -", "x"+version )
+	command = fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/%s/Release.key | apt-key add -", "xUbuntu_"+version )
 	_, err = provisioner.communicator.RunCmd(provisioner.node, command)
 	if err != nil {
 		return err
 	}
 
-	err = provisioner.communicator.WriteFile(provisioner.node, "/etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list", "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/"+version+"/ /", AllRead)
+	err = provisioner.communicator.WriteFile(provisioner.node, "/etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list", "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_"+version+"/ /", AllRead)
 	if err != nil {
 		return err
 	}
-	err = provisioner.communicator.WriteFile(provisioner.node, "/etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o"+provisioner.kubernetesVersion+".list", "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/"+provisioner.kubernetesVersion+"/x"+version+"/ /", AllRead)
+	err = provisioner.communicator.WriteFile(provisioner.node, "/etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o"+k8sVersion+".list", "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/"+k8sVersion+"/xUbuntu_"+version+"/ /", AllRead)
 	if err != nil {
 		return err
 	}
