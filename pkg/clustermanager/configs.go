@@ -6,7 +6,7 @@ import (
 )
 
 // GenerateMasterConfiguration generate the kubernetes config for master
-func GenerateMasterConfiguration(masterNode Node, masterNodes []Node, etcdNodes []Node, kubernetesVersion string) string {
+func GenerateMasterConfiguration(masterNode Node, masterNodes []Node, etcdNodes []Node, kubernetesVersion string, crio bool) string {
 	masterConfigTpl := `apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
 kubernetesVersion: v%s
@@ -38,6 +38,39 @@ featureGates:
   CSINodeInfo: true
   CSIDriverRegistry: true
 `
+	masterConfigTplCrio := `apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+kubernetesVersion: v%s
+networking:
+  serviceSubnet: "10.96.0.0/12"
+  podSubnet: "10.244.0.0/16"
+  dnsDomain: "cluster.local"
+apiServer:
+  featureGates:
+    CSINodeInfo: true
+    CSIDriverRegistry: true
+  certSANs:
+    - 127.0.0.1
+%s%s
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: %s
+  bindPort: 6443
+nodeRegistration:
+  criSocket: "/var/run/crio/crio.sock"
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+featureGates:
+  CSINodeInfo: true
+  CSIDriverRegistry: true
+`
 
 	masterNodesIps := ""
 	for _, node := range masterNodes {
@@ -57,7 +90,11 @@ featureGates:
 	}
 
 	masterConfig := fmt.Sprintf(
+		if crio{
+		masterConfigTplCrio,
+		} else {
 		masterConfigTpl,
+		}
 		kubernetesVersion,
 		masterNodesIps,
 		etcdConfig,

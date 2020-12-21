@@ -47,7 +47,7 @@ func NewClusterManager(provider ClusterProvider, nodeCommunicator NodeCommunicat
 		nodeCommunicator: nodeCommunicator,
 		clusterProvider:  provider,
 		nodes:            provider.GetAllNodes(),
-		crioEnabeld:	  crioEnabeld,
+		crioEnabeld:      crioEnabeld,
 	}
 
 	return manager
@@ -247,7 +247,7 @@ func (manager *Manager) installMasterStep(node Node, numMaster int, masterNode N
 		}
 	}
 	masterNodes := manager.clusterProvider.GetMasterNodes()
-	masterConfig := GenerateMasterConfiguration(node, masterNodes, etcdNodes, manager.Cluster().KubernetesVersion)
+	masterConfig := GenerateMasterConfiguration(node, masterNodes, etcdNodes, manager.Cluster().KubernetesVersion, manager.crioEnabeld)
 	if err := manager.nodeCommunicator.WriteFile(node, "/root/master-config.yaml", masterConfig, AllRead); err != nil {
 		errChan <- err
 	}
