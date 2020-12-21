@@ -239,6 +239,7 @@ Pin-Priority: 1000
 func (provisioner *NodeProvisioner) prepareCrio() error {
 
 	version, err := provisioner.communicator.RunCmd(provisioner.node, "lsb_release -rs")
+	version = strings.TrimSuffix(version, "\n")
 	if err != nil {
 		return err
 	}
