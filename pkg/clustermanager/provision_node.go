@@ -267,6 +267,14 @@ func (provisioner *NodeProvisioner) prepareCrio() error {
 	if err != nil {
 		return err
 	}
+	err = provisioner.communicator.WriteFile(provisioner.node, "/etc/sysctl.d/99-kubernetes-cri.conf", "net.bridge.bridge-nf-call-iptables  = 1 \n net.ipv4.ip_forward                 = 1 \n net.bridge.bridge-nf-call-ip6tables = 1 \n", AllRead)
+	if err != nil {
+		return err
+	}
+	_, err = provisioner.communicator.RunCmd(provisioner.node, "modprobe overlay && modprobe br_netfilter && sysctl --system")
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
