@@ -60,6 +60,8 @@ localAPIEndpoint:
   bindPort: 6443
 nodeRegistration:
   criSocket: "/var/run/crio/crio.sock"
+  kubeletExtraArgs:
+    cgroup-driver: "systemd"
   taints:
   - effect: NoSchedule
     key: node-role.kubernetes.io/master
