@@ -273,6 +273,7 @@ func init() {
 	clusterCreateCmd.Flags().IntP("worker-count", "w", 1, "Number of worker nodes for the cluster")
 	clusterCreateCmd.Flags().StringP("cloud-init", "", "", "Cloud-init file for server preconfiguration")
 	clusterCreateCmd.Flags().StringP("node-cidr", "", "10.0.1.0/24", "the CIDR for the nodes wireguard IPs")
+	clusterCreateCmd.Flags().Bool("crio",false,"install CRI-O instead of docker as container runtime")
 
 	// get default datacenters
 	dcs := []string{}
