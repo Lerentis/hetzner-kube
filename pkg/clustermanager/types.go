@@ -10,6 +10,7 @@ type Node struct {
 	PrivateIPAddress string    `json:"private_ip_address"`
 	SSHKeyName       string    `json:"ssh_key_name"`
 	WireGuardKeyPair WgKeyPair `json:"wire_guard_key_pair"`
+	Crio			 bool	   `json:"crio"`
 }
 
 // Cluster is the structure used to define a cluster

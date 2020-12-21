@@ -20,6 +20,7 @@ type Manager struct {
 	clusterProvider  ClusterProvider
 	haEnabled        bool
 	isolatedEtcd     bool
+	crioEnabeld      bool
 }
 
 // KeepCerts is an enumeration for existing certificate handling during master install
@@ -36,7 +37,7 @@ const (
 )
 
 // NewClusterManager create a new manager for the cluster
-func NewClusterManager(provider ClusterProvider, nodeCommunicator NodeCommunicator, eventService EventService, name string, haEnabled bool, isolatedEtcd bool, cloudInitFile string) *Manager {
+func NewClusterManager(provider ClusterProvider, nodeCommunicator NodeCommunicator, eventService EventService, name string, haEnabled bool, isolatedEtcd bool, cloudInitFile string, crioEnabeld bool) *Manager {
 	manager := &Manager{
 		clusterName:      name,
 		haEnabled:        haEnabled,
@@ -46,6 +47,7 @@ func NewClusterManager(provider ClusterProvider, nodeCommunicator NodeCommunicat
 		nodeCommunicator: nodeCommunicator,
 		clusterProvider:  provider,
 		nodes:            provider.GetAllNodes(),
+		crioEnabeld:	  crioEnabeld,
 	}
 
 	return manager

@@ -35,4 +35,5 @@ type AppConfig struct {
 	CurrentContext *HetznerContext
 	Config         *HetznerConfig
 	SSHClient      clustermanager.NodeCommunicator
+	CrioEnabled	   bool
 }
