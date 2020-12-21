@@ -33,14 +33,20 @@ func (phase *KubeRestartPhase) Run() error {
 	for _, node := range phase.provider.GetAllNodes() {
 		numProcs++
 		go func(node clustermanager.Node) {
-			fmt.Printf("restarting docker+kubelet on node '%s'\n", node.Name)
-			_, err := phase.ssh.RunCmd(node, "systemctl restart docker && systemctl restart kubelet")
-
-			if err != nil {
-				errChan <- err
+			fmt.Printf("restarting container runtime+kubelet on node '%s'\n", node.Name)
+			if node.Crio {
+				_, err := phase.ssh.RunCmd(node, "systemctl restart crio && systemctl restart kubelet")
+				if err != nil {
+					errChan <- err
+				}
+			} else {
+				_, err := phase.ssh.RunCmd(node, "systemctl restart docker && systemctl restart kubelet")
+				if err != nil {
+					errChan <- err
+				}
 			}
 
-			fmt.Printf("restarted docker+kubelet on node '%s'\n", node.Name)
+			fmt.Printf("restarted container runtime+kubelet on node '%s'\n", node.Name)
 			trueChan <- true
 		}(node)
 	}

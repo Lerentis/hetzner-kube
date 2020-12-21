@@ -9,7 +9,7 @@ import (
 
 var kubeRestartPhaseCommand = &cobra.Command{
 	Use:     "restart <CLUSTER_NAME>",
-	Short:   "restart kubelet and docker",
+	Short:   "restart kubelet and container runtime",
 	Args:    cobra.ExactArgs(1),
 	PreRunE: validateClusterInArgumentExists,
 	RunE: func(cmd *cobra.Command, args []string) error {

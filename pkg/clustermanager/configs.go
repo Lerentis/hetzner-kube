@@ -89,12 +89,16 @@ featureGates:
 		}
 	}
 
+	template := ``
+
+	if crio {
+		template = masterConfigTplCrio
+	} else {
+		template = masterConfigTpl
+	}
+
 	masterConfig := fmt.Sprintf(
-		if crio{
-		masterConfigTplCrio,
-		} else {
-		masterConfigTpl,
-		}
+		template,
 		kubernetesVersion,
 		masterNodesIps,
 		etcdConfig,
