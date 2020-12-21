@@ -169,12 +169,19 @@ func (provisioner *NodeProvisioner) installTransportTools() error {
 func (provisioner *NodeProvisioner) preparePackages() error {
 	provisioner.eventService.AddEvent(provisioner.node.Name, "prepare packages")
 
-	err := provisioner.prepareDocker()
-	if err != nil {
-		return err
+	if provisioner.crioEnabeld {
+		error := provisioner.prepareCrio()
+		if error != nil {
+			return error
+		}
+	} else {
+		error := provisioner.prepareDocker()
+		if error != nil {
+			return error
+		}
 	}
 
-	err = provisioner.prepareKubernetes()
+	err := provisioner.prepareKubernetes()
 	if err != nil {
 		return err
 	}
