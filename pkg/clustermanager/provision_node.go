@@ -281,7 +281,7 @@ func (provisioner *NodeProvisioner) updateAndInstall() error {
 	provisioner.eventService.AddEvent(provisioner.node.Name, "installing packages")
 	command := ""
 	if provisioner.crioEnabeld {
-		command = fmt.Sprintf("apt-get install -y cri-o cri-o-runc kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual",
+		command = fmt.Sprintf("apt-get install -y cri-o cri-o-runc kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual && systemctl enable crio.service && systemctl start crio.service",
 			provisioner.kubernetesVersion, provisioner.kubernetesVersion, provisioner.kubernetesVersion)
 	} else {
 		command = fmt.Sprintf("apt-get install -y docker-ce kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual",
