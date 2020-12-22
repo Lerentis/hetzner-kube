@@ -16,7 +16,7 @@ type NodeProvisioner struct {
 	communicator      NodeCommunicator
 	eventService      EventService
 	kubernetesVersion string
-	crioEnabeld		  bool
+	crioEnabeld       bool
 }
 
 // NewNodeProvisioner creates a NodeProvisioner instance
@@ -27,7 +27,7 @@ func NewNodeProvisioner(node Node, manager *Manager) *NodeProvisioner {
 		communicator:      manager.nodeCommunicator,
 		eventService:      manager.eventService,
 		kubernetesVersion: manager.Cluster().KubernetesVersion,
-		crioEnabeld:	   manager.crioEnabeld,
+		crioEnabeld:       manager.crioEnabeld,
 	}
 }
 
@@ -174,6 +174,10 @@ func (provisioner *NodeProvisioner) preparePackages() error {
 		if error != nil {
 			return error
 		}
+		error = provisioner.prepareDocker()
+		if error != nil {
+			return error
+		}
 	} else {
 		error := provisioner.prepareDocker()
 		if error != nil {
@@ -247,13 +251,13 @@ func (provisioner *NodeProvisioner) prepareCrio() error {
 	k8sVersionTokens := strings.Split(provisioner.kubernetesVersion, ".")
 	k8sVersion := k8sVersionTokens[0] + "." + k8sVersionTokens[1]
 
-	command := fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:%s/%s/Release.key | apt-key add -", k8sVersion, "xUbuntu_"+version )
+	command := fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:%s/%s/Release.key | apt-key add -", k8sVersion, "xUbuntu_"+version)
 	_, err = provisioner.communicator.RunCmd(provisioner.node, command)
 	if err != nil {
 		return err
 	}
 
-	command = fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/%s/Release.key | apt-key add -", "xUbuntu_"+version )
+	command = fmt.Sprintf("curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/%s/Release.key | apt-key add -", "xUbuntu_"+version)
 	_, err = provisioner.communicator.RunCmd(provisioner.node, command)
 	if err != nil {
 		return err
