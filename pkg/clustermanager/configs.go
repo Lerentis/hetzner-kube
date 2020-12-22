@@ -59,7 +59,7 @@ localAPIEndpoint:
   advertiseAddress: %s
   bindPort: 6443
 nodeRegistration:
-  criSocket: "/var/run/crio/crio.sock"
+  criSocket: "unix:///var/run/crio/crio.sock"
   kubeletExtraArgs:
     cgroup-driver: "systemd"
   taints:
