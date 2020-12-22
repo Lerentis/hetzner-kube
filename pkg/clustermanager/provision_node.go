@@ -275,10 +275,6 @@ func (provisioner *NodeProvisioner) prepareCrio() error {
 	if err != nil {
 		return err
 	}
-	err = provisioner.communicator.WriteFile(provisioner.node, "/var/lib/kubelet/kubeadm-flags.env", "KUBELET_KUBEADM_ARGS=\"--cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint=unix:///var/run/crio/crio.sock\"", AllRead)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
