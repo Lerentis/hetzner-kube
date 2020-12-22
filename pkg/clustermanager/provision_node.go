@@ -174,10 +174,6 @@ func (provisioner *NodeProvisioner) preparePackages() error {
 		if error != nil {
 			return error
 		}
-		error = provisioner.prepareDocker()
-		if error != nil {
-			return error
-		}
 	} else {
 		error := provisioner.prepareDocker()
 		if error != nil {
@@ -276,6 +272,10 @@ func (provisioner *NodeProvisioner) prepareCrio() error {
 		return err
 	}
 	_, err = provisioner.communicator.RunCmd(provisioner.node, "modprobe overlay && modprobe br_netfilter && sysctl --system")
+	if err != nil {
+		return err
+	}
+	err = provisioner.communicator.WriteFile(provisioner.node, "/var/lib/kubelet/kubeadm-flags.env", "KUBELET_KUBEADM_ARGS=\"--cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint=unix:///var/run/crio/crio.sock\"", AllRead)
 	if err != nil {
 		return err
 	}

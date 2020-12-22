@@ -194,7 +194,7 @@ func (manager *Manager) InstallMasters(keepCerts KeepCerts) error {
 
 			switch keepCerts {
 			case NONE:
-				resetCommand = "kubeadm reset -f && rm -rf /etc/kubernetes/pki && mkdir /etc/kubernetes/pki"
+				resetCommand = "kubeadm reset -f --cri-socket unix:///var/run/crio/crio.sock && rm -rf /etc/kubernetes/pki && mkdir /etc/kubernetes/pki"
 			case CA:
 				resetCommand = "mkdir -p /root/pki && cp -r /etc/kubernetes/pki/* /root/pki && kubeadm reset -f && cp -r /root/pki/ca* /etc/kubernetes/pki"
 			case ALL:
@@ -369,6 +369,7 @@ func (manager *Manager) InstallWorkers(nodes []Node) error {
 	if err != nil {
 		return err
 	}
+	joinCommand = strings.TrimSuffix(joinCommand, "\n")
 
 	errChan := make(chan error)
 	trueChan := make(chan bool)
@@ -382,7 +383,7 @@ func (manager *Manager) InstallWorkers(nodes []Node) error {
 				_, err := manager.nodeCommunicator.RunCmd(
 					node,
 					"for i in ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack_ipv4; do modprobe $i; done"+
-						" && kubeadm reset -f && "+joinCommand)
+						" && kubeadm reset -f --cri-socket unix:///var/run/crio/crio.sock && "+joinCommand + "--cri-socket unix:///var/run/crio/crio.sock")
 				if err != nil {
 					errChan <- err
 				}
