@@ -65,7 +65,7 @@ func RunClusterCreate(cmd *cobra.Command, args []string) {
 
 	containderdOnly, _ := cmd.Flags().GetBool("containerd")
 
-	log.Printf("Creating new cluster\n\nNAME:%s\nMASTERS: %d\nWORKERS: %d\nETCD NODES: %d\nHA: %t\nISOLATED ETCD: %t\nCrio Enabled: %t\nContainderD Only: \t", clusterName, masterCount, workerCount, etcdCount, haEnabled, isolatedEtcd, crioEnabled, containderdOnly)
+	log.Printf("Creating new cluster\n\nNAME:%s\nMASTERS: %d\nWORKERS: %d\nETCD NODES: %d\nHA: %t\nISOLATED ETCD: %t\nCrio Enabled: %t\nContainderD Only: %t", clusterName, masterCount, workerCount, etcdCount, haEnabled, isolatedEtcd, crioEnabled, containderdOnly)
 
 	sshKeyName, _ := cmd.Flags().GetString("ssh-key")
 	masterServerType, _ := cmd.Flags().GetString("master-server-type")

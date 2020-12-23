@@ -296,6 +296,7 @@ func (provisioner *NodeProvisioner) updateAndInstall() error {
 	} else if provisioner.containerdOnly {
 		command = fmt.Sprintf("apt-get install -y containerd.io kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual",
 			provisioner.kubernetesVersion, provisioner.kubernetesVersion, provisioner.kubernetesVersion)
+		command += "&& mkdir -p /etc/containerd && containerd config default | tee /etc/containerd/config.toml && systemctl restart containerd"
 	} else {
 		command = fmt.Sprintf("apt-get install -y docker-ce kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual",
 			provisioner.kubernetesVersion, provisioner.kubernetesVersion, provisioner.kubernetesVersion)
@@ -304,6 +305,13 @@ func (provisioner *NodeProvisioner) updateAndInstall() error {
 	_, err = provisioner.communicator.RunCmd(provisioner.node, command)
 	if err != nil {
 		return err
+	}
+
+	if provisioner.containerdOnly {
+		provisioner.communicator.RunCmd(provisioner.node, "sed  '/\\[plugins\\.\\\"io\\.containerd\\.grpc\\.v1\\.cri\\\"\\.containerd\\.runtimes\\.runc\\.options\\]/a\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ SystemdCgroup = true' /etc/containerd/config.toml && systemctl restart containerd")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
