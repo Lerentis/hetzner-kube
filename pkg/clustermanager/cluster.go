@@ -21,6 +21,7 @@ type Manager struct {
 	haEnabled        bool
 	isolatedEtcd     bool
 	crioEnabeld      bool
+	containerdOnly	 bool
 }
 
 // KeepCerts is an enumeration for existing certificate handling during master install
@@ -37,7 +38,7 @@ const (
 )
 
 // NewClusterManager create a new manager for the cluster
-func NewClusterManager(provider ClusterProvider, nodeCommunicator NodeCommunicator, eventService EventService, name string, haEnabled bool, isolatedEtcd bool, cloudInitFile string, crioEnabeld bool) *Manager {
+func NewClusterManager(provider ClusterProvider, nodeCommunicator NodeCommunicator, eventService EventService, name string, haEnabled bool, isolatedEtcd bool, cloudInitFile string, crioEnabeld bool, containerdOnly bool,) *Manager {
 	manager := &Manager{
 		clusterName:      name,
 		haEnabled:        haEnabled,
@@ -48,6 +49,7 @@ func NewClusterManager(provider ClusterProvider, nodeCommunicator NodeCommunicat
 		clusterProvider:  provider,
 		nodes:            provider.GetAllNodes(),
 		crioEnabeld:      crioEnabeld,
+		containerdOnly:	  containerdOnly,
 	}
 
 	return manager
@@ -194,7 +196,13 @@ func (manager *Manager) InstallMasters(keepCerts KeepCerts) error {
 
 			switch keepCerts {
 			case NONE:
-				resetCommand = "kubeadm reset -f --cri-socket unix:///var/run/crio/crio.sock --cgroup-driver=systemd && rm -rf /etc/kubernetes/pki && mkdir /etc/kubernetes/pki"
+				if manager.crioEnabeld {
+					resetCommand = "kubeadm reset -f --cri-socket unix:///var/run/crio/crio.sock --cgroup-driver=systemd && rm -rf /etc/kubernetes/pki && mkdir /etc/kubernetes/pki"
+				} else if manager.containerdOnly {
+					resetCommand = "kubeadm reset -f && rm -rf /etc/kubernetes/pki && mkdir /etc/kubernetes/pki"
+				} else {
+					resetCommand = "kubeadm reset -f && rm -rf /etc/kubernetes/pki && mkdir /etc/kubernetes/pki"
+				}
 			case CA:
 				resetCommand = "mkdir -p /root/pki && cp -r /etc/kubernetes/pki/* /root/pki && kubeadm reset -f && cp -r /root/pki/ca* /etc/kubernetes/pki"
 			case ALL:
@@ -380,10 +388,17 @@ func (manager *Manager) InstallWorkers(nodes []Node) error {
 			numProcs++
 			go func(node Node) {
 				manager.eventService.AddEvent(node.Name, "registering node")
+				command := ""
+				if manager.crioEnabeld {
+					command = "for i in ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack_ipv4; do modprobe $i; done && kubeadm reset -f --cri-socket unix:///var/run/crio/crio.sock --cgroup-driver=systemd && "+joinCommand + "--cri-socket unix:///var/run/crio/crio.sock --cgroup-driver=systemd"
+				} else if manager.containerdOnly {
+					command = "for i in ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack_ipv4; do modprobe $i; done && kubeadm reset -f && "+joinCommand
+				} else {
+					command = "for i in ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack_ipv4; do modprobe $i; done && kubeadm reset -f && "+joinCommand
+				}
 				_, err := manager.nodeCommunicator.RunCmd(
 					node,
-					"for i in ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack_ipv4; do modprobe $i; done"+
-						" && kubeadm reset -f --cri-socket unix:///var/run/crio/crio.sock --cgroup-driver=systemd && "+joinCommand + "--cri-socket unix:///var/run/crio/crio.sock --cgroup-driver=systemd")
+					command)
 				if err != nil {
 					errChan <- err
 				}

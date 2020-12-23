@@ -36,4 +36,5 @@ type AppConfig struct {
 	Config         *HetznerConfig
 	SSHClient      clustermanager.NodeCommunicator
 	CrioEnabled	   bool
+	ContainerdOnly bool
 }

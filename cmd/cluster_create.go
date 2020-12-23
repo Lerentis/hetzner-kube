@@ -63,7 +63,9 @@ func RunClusterCreate(cmd *cobra.Command, args []string) {
 
 	crioEnabled, _ := cmd.Flags().GetBool("crio")
 
-	log.Printf("Creating new cluster\n\nNAME:%s\nMASTERS: %d\nWORKERS: %d\nETCD NODES: %d\nHA: %t\nISOLATED ETCD: %t\nCrio Enabled: %t", clusterName, masterCount, workerCount, etcdCount, haEnabled, isolatedEtcd, crioEnabled)
+	containderdOnly, _ := cmd.Flags().GetBool("containerd")
+
+	log.Printf("Creating new cluster\n\nNAME:%s\nMASTERS: %d\nWORKERS: %d\nETCD NODES: %d\nHA: %t\nISOLATED ETCD: %t\nCrio Enabled: %t\nContainderD Only: \t", clusterName, masterCount, workerCount, etcdCount, haEnabled, isolatedEtcd, crioEnabled, containderdOnly)
 
 	sshKeyName, _ := cmd.Flags().GetString("ssh-key")
 	masterServerType, _ := cmd.Flags().GetString("master-server-type")
@@ -105,7 +107,7 @@ func RunClusterCreate(cmd *cobra.Command, args []string) {
 
 	coordinator := pkg.NewProgressCoordinator()
 
-	clusterManager := clustermanager.NewClusterManager(hetznerProvider, sshClient, coordinator, clusterName, haEnabled, isolatedEtcd, cloudInit, crioEnabled)
+	clusterManager := clustermanager.NewClusterManager(hetznerProvider, sshClient, coordinator, clusterName, haEnabled, isolatedEtcd, cloudInit, crioEnabled, containderdOnly)
 	cluster := clusterManager.Cluster()
 	saveCluster(&cluster)
 	renderProgressBars(&cluster, coordinator)
@@ -274,6 +276,7 @@ func init() {
 	clusterCreateCmd.Flags().StringP("cloud-init", "", "", "Cloud-init file for server preconfiguration")
 	clusterCreateCmd.Flags().StringP("node-cidr", "", "10.0.1.0/24", "the CIDR for the nodes wireguard IPs")
 	clusterCreateCmd.Flags().Bool("crio",false,"install CRI-O instead of docker as container runtime")
+	clusterCreateCmd.Flags().Bool("containerd",false,"install containerd instead of docker as container runtime")
 
 	// get default datacenters
 	dcs := []string{}

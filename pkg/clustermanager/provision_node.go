@@ -17,6 +17,7 @@ type NodeProvisioner struct {
 	eventService      EventService
 	kubernetesVersion string
 	crioEnabeld       bool
+	containerdOnly	  bool
 }
 
 // NewNodeProvisioner creates a NodeProvisioner instance
@@ -28,6 +29,7 @@ func NewNodeProvisioner(node Node, manager *Manager) *NodeProvisioner {
 		eventService:      manager.eventService,
 		kubernetesVersion: manager.Cluster().KubernetesVersion,
 		crioEnabeld:       manager.crioEnabeld,
+		containerdOnly:	   manager.containerdOnly,
 	}
 }
 
@@ -290,6 +292,9 @@ func (provisioner *NodeProvisioner) updateAndInstall() error {
 	command := ""
 	if provisioner.crioEnabeld {
 		command = fmt.Sprintf("apt-get install -y cri-o cri-o-runc kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual && systemctl enable crio.service && systemctl start crio.service",
+			provisioner.kubernetesVersion, provisioner.kubernetesVersion, provisioner.kubernetesVersion)
+	} else if provisioner.containerdOnly {
+		command = fmt.Sprintf("apt-get install -y containerd kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual",
 			provisioner.kubernetesVersion, provisioner.kubernetesVersion, provisioner.kubernetesVersion)
 	} else {
 		command = fmt.Sprintf("apt-get install -y docker-ce kubelet=%s-00 kubeadm=%s-00 kubectl=%s-00 kubernetes-cni=0.8.7-00 wireguard linux-headers-generic linux-headers-virtual",

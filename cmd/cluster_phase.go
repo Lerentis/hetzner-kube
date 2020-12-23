@@ -53,6 +53,7 @@ func getCommonPhaseDependencies(steps int, cmd *cobra.Command, args []string) (c
 		cluster.IsolatedEtcd,
 		cluster.CloudInitFile,
 		AppConf.CrioEnabled,
+		AppConf.ContainerdOnly,
 	)
 
 	return provider, clusterManager, coordinator
